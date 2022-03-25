@@ -1,0 +1,810 @@
+{
+	"info": {
+		"_postman_id": "7bb2185c-6c84-418a-a792-70564c1e781e",
+		"name": "API 102: Building Workflows with APIs",
+		"description": "# API 102: Building Workflows with APIs\n\nThis collection is a companion to the Postman Classroom Program lesson **API 102: Building Workflows with APIs**.\n\nSee the [**lesson video**](https://www.loom.com/share/37baeeb299ec477b8e9f142697d94b14).\n([slides](https://docs.google.com/presentation/d/1Gtht9mdO-p7Uz0mhheae5nmF_h3NwO2j0U-qQR8psr4/edit#slide=id.gce40b160df_0_91))\n\n## What you will learn\n\n*   Using Authorization to make requests\n*   Calling a real-world REST API\n*   Using variables and chaining multiple API calls to build a workflow\n*   Visualizing response data\n    \n\n## Resources\n\n*   [Spotify Web API](https://developer.spotify.com/documentation/web-api/reference/)\n*   [Authorization in Postman](https://learning.postman.com/docs/sending-requests/authorization/)\n    \n\n## Getting Started\n\n1.  Fork this collection to your own workspace\n2.  Complete the mission in `your turn!`\n    \n\n## Submitting your work\n\nOnce you've finished mission in `your turn!` mission, follow the instructions on the `submit` folder",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "demo (complete)",
+			"item": [
+				{
+					"name": "workflow",
+					"item": [
+						{
+							"name": "get track id",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// get the JSON response body",
+											"const body = pm.response.json();",
+											"",
+											"// get first search result track ",
+											"const firstTrack = body.tracks.items[0]",
+											"",
+											"// save the trackId and trackName as collection variables to use in future request",
+											"const trackId = firstTrack.id;",
+											"",
+											"pm.collectionVariables.set(\"trackId\", trackId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableUrlEncoding": false
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/search?q=track:{{track}}+artist:{{artist}}&type=track",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"search"
+									],
+									"query": [
+										{
+											"key": "q",
+											"value": "track:{{track}}+artist:{{artist}}"
+										},
+										{
+											"key": "type",
+											"value": "track"
+										}
+									]
+								},
+								"description": "#### get track info \n\nThis request makes an authorized call to Spotify's [Search API](https://developer.spotify.com/documentation/web-api/reference/#category-search) to find tracks by title and artist. \n\nIn the `Tests` tab, we save the first `trackId` and `trackName` returned to collection variables for use in the next request"
+							},
+							"response": []
+						},
+						{
+							"name": "get recommendations",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// parse response",
+											"const body = pm.response.json() ",
+											"",
+											"// get the first three recommended tracks",
+											"const topThreeRecs = body.tracks.slice(0,3) ",
+											"",
+											"// get trackName from collection variables",
+											"const track = pm.collectionVariables.get('track') ",
+											"",
+											"// define an HTML template with variables",
+											"// use {{#each var}}{{/each}} to iterate through an array of data",
+											"const template = `",
+											"<h3>Discover new tunes!</h3>",
+											"<p>If you like \"{{track}}\", you'll love:</p>",
+											"<ul>",
+											"  {{#each topThreeRecs}}",
+											"  <li>{{name}} - <a href=\"{{external_urls.spotify}}\">Play</a></li>",
+											"  {{/each}}",
+											"</ul>",
+											"`",
+											"",
+											"// set visualizer and pass in variables",
+											"pm.visualizer.set(template, { topThreeRecs, track })"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableUrlEncoding": false
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/recommendations?seed_tracks={{trackId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"recommendations"
+									],
+									"query": [
+										{
+											"key": "seed_tracks",
+											"value": "{{trackId}}"
+										}
+									]
+								},
+								"description": "#### get recommendations \n\nThis request makes an authorized call to Spotify's [Browse API](https://developer.spotify.com/documentation/web-api/reference/#category-browse) to find song recommendations based on `seed_tracks`. \n\nIn the `Tests` tab, we use Postman's [visualizer feature](https://learning.postman.com/docs/sending-requests/visualizer/) to template a UI in the **Visualize** tab of the response"
+							},
+							"response": []
+						}
+					],
+					"description": "#### Planning the workflow\nLet's work backwards. Check the Spotify Web API [reference docs](https://developer.spotify.com/documentation/web-api/reference/#reference-index). What endpoints will help us on our mission?\n\nNotice that all the requests share the same base URL: `https://api.spotify.com/v1`. We saved this value as a collection variable called `baseUrl` that can be used in our requests. \n\n##### How to get recommendations?\nThe [Browse API](https://developer.spotify.com/documentation/web-api/reference/#category-browse) has an endpoint called [Get Recommendations](https://developer.spotify.com/documentation/web-api/reference/#endpoint-get-recommendations) that accepts a [query parameter](https://learning.postman.com/docs/sending-requests/requests/#sending-parameters) called `seed_tracks` - a list of `trackId`s to base recommendations on. \n\n`GET {{baseUrl}}/recommendations?seed_tracks=<trackId,...>`\n\n##### How to get a `trackId`?\n\nThe [Search API](https://developer.spotify.com/documentation/web-api/reference/#category-search) has a `/search` endpoint that accepts query parameters `q` for query string, and `type` for the type of entity to search\n\n`GET {{baseUrl}}/search?q=<query>&type=<entity type>`"
+				}
+			],
+			"description": "## Demo\n\nThis is a completed version of the demo your instructor walked you through in the lecture.\n\nFeel free to use it as a reference in your challenge!\n\n#### Mission\n\nBuild a workflow that allows a blogger to enter for a `track` name and `artist` and get three similar song recommendations."
+		},
+		{
+			"name": "your turn!",
+			"item": [
+				{
+					"name": "workflow",
+					"item": [
+						{
+							"name": "get artist1 id",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// TODO: get response body JSON",
+											"const body = pm.response.json();",
+											"// TODO: get the first artist returned in the search results",
+											"const firstArtist = body.artists.items[0]",
+											"// TODO: get the first artist's id",
+											"const trackId = firstArtist.id;",
+											"",
+											"// TODO: set the artist's id to collection variable 'artistId1' so it can be used later in the workflow",
+											"pm.collectionVariables.set(\"artistId1\", trackId);",
+											"",
+											"//console.log(trackId)"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableUrlEncoding": false
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/search?q=artist:{{artist1}}&type=artist",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"search"
+									],
+									"query": [
+										{
+											"key": "q",
+											"value": "artist:{{artist1}}"
+										},
+										{
+											"key": "type",
+											"value": "artist"
+										}
+									]
+								},
+								"description": "### get artist1 id\n\nIn order to use Spotify's [song recommendation](https://developer.spotify.com/documentation/web-api/reference/#endpoint-get-recommendations) feature, we need to know some artist ids.\n\n#### Search artists\n\n1. First, click the `APIs 102: Building Workflows with APIs` collection folder, then the `Variables` tab. [Add a collection variable](https://learning.postman.com/docs/sending-requests/variables/#defining-collection-variables) called `artist1` and give it a value of a popular artist you like.\n\n1. See the [Spotify Search API](https://developer.spotify.com/documentation/web-api/reference/#/operations/search) documentation to determine the endpoint and query parameters needed to search for artists. Use doubly curly braces \\{\\{artist1\\}\\} to reference your variable from step one in your query\n\n1. **Send** your request. You should get back a status 200 response, where the response body is an object with a key named `artists`. Inside should be an array of `items` that contain the search results for your artist. *No search results? Try another artist name*\n\n#### Use scripts to save artist id\n \nIn order to use the artist id of the first artist returned in the search results later in the workflow, you need to save the id to a variable.\n\n1. In the `Tests` tab, add a scripts beneath  each `// TODO` instruction. If you get stuck, check the Postman [docs](https://learning.postman.com/docs/writing-scripts/script-references/postman-sandbox-api-reference/) on using the `pm` object in scripts! Also, feel free to reference the `demo (complete)` folder for hints. \n\n1. **Save** your changes and click **Send**. Your script should execute when the response is returned. \n\n1. Check that your Tests script worked by viewing the collection variables on `APIs 102: Building Workflows with APIs`. Make sure a value has been automatically set for `artistId1`.\n\n#### Next step\n\nMove on to the next request: `get artist2 id`"
+							},
+							"response": []
+						},
+						{
+							"name": "get artist2 id",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// TODO: get response body JSON",
+											"const body = pm.response.json();",
+											"",
+											"// TODO: get the first artist returned in the search results",
+											"const firstArtist = body.artists.items[0]",
+											"",
+											"// TODO: get the first artist's id",
+											"const trackId = firstArtist.id;",
+											"",
+											"// TODO: set the artist's id to collection variable 'artistId1' so it can be used later in the workflow",
+											"pm.collectionVariables.set(\"artistId2\", trackId);",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableUrlEncoding": false
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/search?q=artist:{{artist2}}&type=artist",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"search"
+									],
+									"query": [
+										{
+											"key": "q",
+											"value": "artist:{{artist2}}"
+										},
+										{
+											"key": "type",
+											"value": "artist"
+										}
+									]
+								},
+								"description": "### get artist2 id\n\nRepeat the steps from `get artist 1 id` - this to for `artist2`! \n\n#### Next step\n\nMove on to the next request: `get artist3 id`"
+							},
+							"response": []
+						},
+						{
+							"name": "get artist3 id",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// TODO: get response body JSON",
+											"const body = pm.response.json();",
+											"",
+											"// TODO: get the first artist returned in the search results",
+											"const firstArtist = body.artists.items[0]",
+											"",
+											"// TODO: get the first artist's id",
+											"const trackId = firstArtist.id;",
+											"",
+											"// TODO: set the artist's id to collection variable 'artistId1' so it can be used later in the workflow",
+											"pm.collectionVariables.set(\"artistId3\", trackId);",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableUrlEncoding": false
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/search?q=artist:{{artist3}}&type=artist",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"search"
+									],
+									"query": [
+										{
+											"key": "q",
+											"value": "artist:{{artist3}}"
+										},
+										{
+											"key": "type",
+											"value": "artist"
+										}
+									]
+								},
+								"description": "### get artist3 id\n\nRepeat the steps from `get artist 1 id` - this to for `artist3`! \n\n#### Next step\nYou have all your three artist ids now!\n\nMove on to the next request: `get recommendations`"
+							},
+							"response": []
+						},
+						{
+							"name": "get recommendations",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// parse the JSON response body",
+											"const body = pm.response.json() ",
+											"",
+											"// get collection variables",
+											"const artist1 = pm.collectionVariables.get('artist1')",
+											"const artist2 = pm.collectionVariables.get('artist2')",
+											"const artist3 = pm.collectionVariables.get('artist3')",
+											"",
+											"// TODO:  Replace 'null' with the code to get the first five recommended tracks from the response, using .slice()",
+											"const topFiveRecs = body.tracks.slice(0,5)",
+											"",
+											"/* TODO: define an HTML template inside the backticks to list the names of the top 5 recommended tracks. ",
+											"You can interpolate variables using the {{}} syntax.",
+											"",
+											" Include a play link for each that links to the external spotify url in an anchor tag ",
+											"",
+											" <a href=\"<url-here>\">Play</a>",
+											"    ",
+											"*/",
+											"const template = `",
+											"<h3>Discover new tunes!</h3>",
+											"<p>If you like {{artist1}} , {{artist2}} & {{artist3}}  you'll also love:</p>",
+											"<ul>",
+											"  {{#each topFiveRecs}}",
+											"  <li>{{name}} - <a href=\"{{external_urls.spotify}}\">Play</a></li>",
+											"  {{/each}}",
+											"</ul>",
+											"`",
+											"",
+											"// TODO: use pm.visualizer.set() to set the visualizer template and pass in template variables",
+											"pm.visualizer.set(template, { topFiveRecs, artist1,artist2,artist3 })",
+											"//pm.visualizer.set(template, { topFiveRecs, artist2 })",
+											"//pm.visualizer.set(template, { topFiveRecs, artist3 })"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableUrlEncoding": false
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "seed_tracks",
+										"value": "{{artistId1}},{{artistId2}},{{artistId3}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/recommendations?seed_artists={{artistId1}},{{artistId2}},{{artistId3}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"recommendations"
+									],
+									"query": [
+										{
+											"key": "seed_artists",
+											"value": "{{artistId1}},{{artistId2}},{{artistId3}}"
+										}
+									]
+								},
+								"description": "### get recommendations\n\nHere is the exciting part! We will use the three artists ids saved from the previous requests (`artistId1`,`artistId2`,`artistId3`) to ask Spotify for new song recommendations. \n\n\n1. Check out Spotify's API documentation for [getting recommendations](https://developer.spotify.com/documentation/web-api/reference/#endpoint-get-recommendations). Replace `<ENDPOINT>` with the correct endpoint and query parameter that will help you get song recommendations based on artist seeds. *Be sure to include the three artist ids you have saved as collection variables, using the double curly braces to interpolate!*\n\n1. You should get back a status 200 response, with a response object that has a key \"tracks\" with and array of \"items\" (track recommendations) inside. \n\n### Visualize the response\n\n1. Open the **Tests** tab on this request. Some scripts have been started, but need your help to finish. Complete the `TODO`s\n\nHelpful resources\n- [Postman visualizer documentation](https://learning.postman.com/docs/sending-requests/visualizer/#adding-visualizer-code)\n\n- [Handlebars.js docs](https://handlebarsjs.com/) (Postman uses this library for visualizer templates)\n\n#### Next step\n\nOnce you've finished, follow the instructions in `submit` to submit your work"
+							},
+							"response": []
+						}
+					],
+					"description": "#### 1. Authorization \n\nMost APIs that do cool things require [Authorization](https://learning.postman.com/docs/sending-requests/authorization/), to ensure that client requests access data securely.\n\nTo use the [Spotify Web API](https://developer.spotify.com/documentation/web-api/), we must authorize our requests with [OAuth 2.0](https://learning.postman.com/docs/sending-requests/authorization/#oauth-20). We will use the [Authorization Code](https://learning.postman.com/docs/sending-requests/authorization/#authorization-code) grant type in this demo. \n\n##### Set up OAuth 2.0\n\n1. From the collection folder `APIs 102: Building Workflows with APIs`, visit the `Authorization` tab. Make sure `OAuth 2.0` type is selected and that auth data is added to `Request Headers`. \n\n\n1. Next, fill out the `Configure New Token` section. Start by giving your token a **Token Name** like `SPOTIFY` \n\n1. Select **Authorization Code** as the grant type.\n\n1. To get a **Client ID** and a **Client Secret**, you will need to have a free Spotify account and create a new Spotify app - both of which can be done from the [Spotify Developer dashboard](https://developer.spotify.com/dashboard/login). *(Remember - sensitive data in Postman should always be saved as a variable under the `CURRENT VALUE` column to protect values from being accidentally shared publicly!)*\n\n1. Edit your Spotify app settings to point to the Redirect URI (also known as **Callback URL**) from Postman.\n\n1. Find the **Auth URL** and **Access Token URL** from [Spotify's Authorization Code auth page](https://developer.spotify.com/documentation/general/guides/authorization/code-flow/). *Hint: Look at the URLs in the code snippets in the documentation.*\n\n1. The endpoints we will use don't need special scopes, so leave this field blank.\n\n1. Leave the \"State\" field blank\n\n##### Obtain an access token \n1. Once you've filled out the `Configure New Token` section, click `Get New Access Token` to go through a wizard for obtaining an access token. \n1. Click `Use Token` on the popup to add the access token to your collection Authorization\n\nSince you are setting up Authorization at the collection level, this access token applies to the headers of all requests inside the collection. That means you can make multiple authorized calls to the Spotify API with ease! \n\nYou can refresh the token if it expires by clicking the `Get New Access Token` button again\n\n\n#### Next step\n\nPhew! You got through the hardest part :) \n\nSelect the request named `get artist1 id` and read the documentation."
+				},
+				{
+					"name": "submit",
+					"item": [
+						{
+							"name": "submit",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// DO NOT EDIT THESE TESTS. They ensure you have completed the assignment and send data to your instructor.",
+											"",
+											"// counter for passed tests",
+											"let passed = 0",
+											"let totalToPass = 13",
+											"",
+											"pm.test(\"Status code 200 from Postman API\", function () {",
+											"    pm.response.to.have.status(200);",
+											"    passed++",
+											"});",
+											"",
+											"const studentEmail = pm.environment.get(\"studentEmail\");",
+											"const postmanApiKey = pm.environment.get(\"postman-api-key\");",
+											"",
+											"pm.test(\"'postman-api-key' is set as an active environment variables\", function () {",
+											"    const cond = !!postmanApiKey",
+											"    pm.expect(cond).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"const body = pm.response.json()",
+											"",
+											"const yourTurnFolder = body.collection.item.filter(i => i.name === 'your turn!')[0]",
+											"const workflowFolder = yourTurnFolder.item[0]",
+											"",
+											"pm.test(\"Workflow has 4 requests\", function () {",
+											"    pm.expect(workflowFolder.item).to.have.length(4);",
+											"    passed++",
+											"});",
+											"",
+											"const workflowRequests = workflowFolder.item.map(i => i.request)",
+											"",
+											"pm.test(\"All workflow requests are GET requests\", function () {",
+											"    const cond = workflowRequests.every(r => r.method === \"GET\")",
+											"    pm.expect(cond).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"const firstThreeReqs = workflowRequests.slice(0,3)",
+											"",
+											"pm.test(\"First three requests hit the /search endpoint\", function () {",
+											"    const cond = firstThreeReqs.every(r => r.url.path[0] === \"search\")",
+											"    pm.expect(cond).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"pm.test(\"First three requests contain a query for type artist\", function () {",
+											"    const cond = firstThreeReqs.every(r => r.url.raw.match(/[?&]type=artist/))",
+											"    pm.expect(cond).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"pm.test(\"First three requests contain a query q for collection variable {{artistN}}\", function () {",
+											"    const cond = firstThreeReqs.every(r => r.url.raw.match(/[?&]q=(artist:)?\\{\\{artist\\d\\}\\}/))",
+											"    pm.expect(cond).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"",
+											"const workflowEvents = workflowFolder.item.map(i=>i.event)",
+											"",
+											"pm.test(\"All requests in workflow contain Test scripts\", function () {",
+											"    const cond = workflowEvents.every(e => e.map(ev=>ev.listen).includes('test'))",
+											"    pm.expect(cond).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"const artist1Script = workflowEvents[0].find(e => e.listen === \"test\").script",
+											"",
+											"pm.test(\"First request saves 'artistId1' to collection variable\", function () {",
+											"    const cond = artist1Script.exec.some(e=> e.match(/^pm\\.collectionVariables\\.set\\([\"']artistId1[\"'']/))",
+											"    pm.expect(cond).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"const artist2Script = workflowEvents[1].find(e => e.listen === \"test\").script",
+											"",
+											"pm.test(\"Second request saves 'artistId2' to collection variable\", function () {",
+											"    const cond = artist2Script.exec.some(e=> e.match(/^pm\\.collectionVariables\\.set\\([\"']artistId2[\"'']/))",
+											"    pm.expect(cond).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"const artist3Script = workflowEvents[2].find(e => e.listen === \"test\").script",
+											"",
+											"pm.test(\"Third request saves 'artistId3' to collection variable\", function () {",
+											"    const cond = artist3Script.exec.some(e=> e.match(/^pm\\.collectionVariables\\.set\\([\"']artistId3[\"'']/))",
+											"    pm.expect(cond).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"const recommendationsScript = workflowEvents[3].find(e => e.listen === \"test\").script",
+											"",
+											"pm.test(\"'get recommendations' request Test script renders visualizer with template\", function () {",
+											"    const cond = recommendationsScript.exec.some(e=> e.match(/^pm\\.visualizer\\.set\\(/))",
+											"    pm.expect(cond).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"pm.test(\"'get recommendations lists 'topFiveRecs' in template\", function () {",
+											"    const cond1 = recommendationsScript.exec.some(e=> e.match(/{{#each topFiveRecs}}/))",
+											"    pm.expect(cond1).to.eql(true);",
+											"    const cond2 = recommendationsScript.exec.some(e=> e.match(/\\{\\{\\/each\\}\\}/))",
+											"    pm.expect(cond2).to.eql(true);",
+											"    passed++",
+											"});",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"",
+											"// set up visualizer template",
+											"const baseStyle = `",
+											"<style>",
+											"body {",
+											"    background-color: #FF6C38;",
+											"}",
+											".container {",
+											"    background-color: #FFF;",
+											"    border-radius: 8px;",
+											"    border: 2px solid #FF6C38;",
+											"    padding: 2rem;",
+											"    max-width: 675px;",
+											"    margin: 2rem auto;",
+											"}",
+											"",
+											".show-on-send {",
+											"    display: none;",
+											"}",
+											"</style>",
+											"`",
+											"",
+											"// requires var 'workshopCode'",
+											"const testsPassedTemplate = `",
+											"${baseStyle}",
+											"<div class=\"container\">",
+											"    <h3>All tests passed! 🚀</h3>",
+											"    <p>Congratulations! You've completed {{workshopCode}}. If you've registered for the classroom program, enter the <strong>same email you used in registration</strong> below to submit your progress to your teacher</p>",
+											"",
+											"    <form onsubmit=\"handleSubmit(event)\">",
+											"    <input type=\"email\" name=\"email\" placeholder=\"Enter your email\" required />",
+											"    <input type=\"submit\" id=\"submit-button\"/>",
+											"    </form>",
+											"",
+											"    <p class=\"show-on-send\"><em>Please hold. It may take up to a minute to submit your data</em></p>",
+											"</div>",
+											"",
+											"<script>",
+											"const submitUrl = \"https://classroom-program-student-work-submit-prod.glitch.me/submit/{{workshopCode}}\"",
+											"",
+											"const submitButton = document.getElementById('submit-button');",
+											"const showOnSend = document.querySelector('.show-on-send');",
+											"const container = document.querySelector('.container');",
+											"",
+											"// attempt to send student data to progress monitor",
+											"async function handleSubmit(e) {",
+											"    e.preventDefault();",
+											"    enableSendingUI();",
+											"",
+											"    const studentEmail = e.target.elements.email.value;",
+											"    const data = {",
+											"        studentEmail",
+											"    }",
+											"",
+											"    try {",
+											"        const opts = { ",
+											"           method: 'post',",
+											"           body: JSON.stringify(data),",
+											"           headers: {",
+											"            'Content-Type': 'application/json'",
+											"           }",
+											"        }",
+											"",
+											"        const res = await fetch(submitUrl, opts);",
+											"        if(res.ok) {",
+											"            displaySuccessMsg();",
+											"        } else {",
+											"            displayServerErrorMsg();",
+											"        }",
+											"    } catch(err) {",
+											"        console.error(err)",
+											"        displayServerErrorMsg();",
+											"    } finally {",
+											"        disableSendingUI();",
+											"    }",
+											"}; ",
+											"",
+											"function enableSendingUI() {",
+											"   submitButton.disabled = true;",
+											"   submitButton.value = \"Sending...\";",
+											"   showOnSend.style.display = \"block\";",
+											"}",
+											"",
+											"function disableSendingUI() {",
+											"   submitButton.disabled = false;",
+											"   submitButton.value = \"Submit\";",
+											"   showOnSend.style.display = \"none\";",
+											"}",
+											"",
+											"function displaySuccessMsg() {",
+											"    const template = \"<h3>Success! 🎉</h3><p>Your teacher will be able to see your progress. Please do not resubmit your progress again.</p>\"",
+											"    container.innerHTML = template",
+											"}",
+											"",
+											"function displayServerErrorMsg() {",
+											"    const template = \"<h3>Uh oh!</h3><p>Something went wrong when attempting to submit your progress. If the problem persists, contact <code>studentprogram@postman.com</code></p>\"",
+											"    container.innerHTML = template",
+											"}",
+											"</script>",
+											"`",
+											"",
+											"const testsFailedTemplate = `",
+											"${baseStyle}",
+											"<div class=\"container\">",
+											"    <h3>Not quite done 🚫</h3>",
+											"    <p>It looks like your work is still failing some tests. Check the <strong>Test Results</strong> tab for details on which tests are failing. Fix the errors and try submitting again!</p>",
+											"</div>",
+											"`",
+											"",
+											"if (passed === totalToPass) {",
+											"    console.log('All tests passed!')",
+											"    const workshopCode = 'API102'",
+											"    pm.visualizer.set(testsPassedTemplate, { workshopCode })",
+											"} else {",
+											"    pm.visualizer.set(testsFailedTemplate)",
+											"}",
+											"",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Api-Key",
+										"value": "{{postman-api-key}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://api.getpostman.com/collections/{{collectionId}}",
+									"protocol": "https",
+									"host": [
+										"api",
+										"getpostman",
+										"com"
+									],
+									"path": [
+										"collections",
+										"{{collectionId}}"
+									]
+								},
+								"description": "[step-by-step video](https://www.loom.com/share/8b43484148ec49a5b5a8c2f0fcec646d)\n\n#### 1\\. **Save the collection ID as a collection variable**\n\nGet the collection ID for this collection by clicking on the collection folder (root folder), selecting the info icon `ⓘ` on the right and copying the ID.\n\nFrom the collection's \"Variables\" tab, replace the value with the ID you got from the previous step, then **Save** the change.\n\n#### 2\\. **Add your Postman API key to the environment**\n\n*You will only need to do this step the first time you submit*\n\nIf you do not have a Postman API Key, generate one [here](https://go.postman.co/settings/me/api-keys). We will store this value as an **Environment variable** - environments allow us to share variables across multiple collections. [Create an environment](https://learning.postman.com/docs/sending-requests/managing-environments/#creating-environments) from the Environments tab and call it `my-info`. Add your Postman API key to your new environment as a variable named `postman-api-key`.\n\n> ⚠ When saving sensitive environment variables, remember to only use the CURRENT VALUE column\n\nMake sure you save your changes! You can use this environment for any future Postman Classroom Program workshops you complete. The `postman-api-key` variable is used in the `X-Api-Key` header of each `submit` request.\n\n#### 3\\. **Set 'my-info' environment to active**\n\nEnsure you environment is active by selecting it in the upper right.\n\nClick the 'eye' icon to the right to confirm there is a value present in your environment for `postman-api-key`\n\n![](https://user-images.githubusercontent.com/9841162/124359041-35bb4a00-dbf1-11eb-8895-f9d7a0451c52.png)\n\n#### 4\\. **Check your work**\n\nSave your changes in the collection and environment. Hit **Send**.\n\n> If you get a `401 Unauthorized` response, carefully review steps 3 and 4 and make sure your Postman API key is correctly resolving.\n\nCheck the response. in the **Body** tab of the response, click **Visualize** to view your status.\n\nIf any of the tests failed, you will see a \"Not quite done\" message like below.\n\n![](https://user-images.githubusercontent.com/9841162/124359464-2a691e00-dbf3-11eb-9e90-7dd27db2bfd0.png)\n\nTo see which tests failed, open the **Test Results** tab of the response. Address the failed tests in your work and submit again.\n\n#### 5\\. **Submit your progress**\n\n*Only do this step if you are registered with the Postman Classroom Program!*\n\nIf all the tests pass, you will see a congratulations message.\n\n![](https://user-images.githubusercontent.com/9841162/124359555-8e8be200-dbf3-11eb-8b0f-0ab6a6e1b232.png)\n\nIf (and only if!) you have registered for the Postman Classroom Program, you will need to submit **the same email address you used to register for the program** in the form that appears. Enter your email and hit \"Submit\". This will allow your teacher to monitor your progress!\n\nOnce your progress is submitted successfully, you are done with this module! Feel free to run the tests again whenever you like by running `submit` - but please to not re-submit your email for this module.\n\n### Troubleshooting: common errors when submitting\n\n*   **Make sure there is a value for** `collectionId` in your collection variables.\n*   **Make sure that value is your collection ID, NOT your request ID.** You can find your collection ID by clicking on your collection (top level folder), then checking the info `ⓘ` tab in the far right menu\n*   **Make sure there is no accidental white space** when you define you `collectionId` variable. That includes spaces and new lines. You can see a small gray arrow at the end of your value if there is a newline - simply delete the newline or space\n    \n\n#### Going further\n\nThere are tons of fun things you can do with the Spotify API. Explore the [Spotify API reference](https://developer.spotify.com/documentation/web-api/reference/) and challenge yourself to build workflows that you would find useful. Remember to read the documentation to know what auth scopes are required for certain requests!\n\nWhat workflows could you make?\n\n*   Create a playlist of an authenticated user’s most-played songs\n*   Create a playlist of songs with no words (for studying!)\n*   Finds song recommendations based on a user’s currently playing track\n*   ...Your idea here!"
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "## Your mission\n\nThe blogger wants more accurate song recommendations based on artists they like!\n\nAllow the blogger to enter **three artists** (`artist1`, `artist2`, `artist3`) as [collection variables](https://learning.postman.com/docs/sending-requests/variables/#defining-collection-variables) to **generate 5 song recommendations** in the final request.\n\nThe workflow is partially completed already inside the `workflow` folder below. You will need to fill in the rest!\n\nOnce you've completed the mission, follow the instructions in the `submit` folder to check your work.\n\n#### Before you start\n\nCheck out the [Spotify API reference](https://developer.spotify.com/documentation/web-api/reference/). Get familiar with the Search API and Browse API (Get Recommendations)\n\n### Next step\n\nClick the \"workflow\" folder below and check the documentation.\n\n## Need help?\n\nIf you get stuck, search the [Postman forums](https://community.postman.com/) or post a new topic in the [Training category](https://community.postman.com/c/training/38) if you don't see your question. Also, see these [general troubleshooting tips](https://community.postman.com/t/general-troubleshooting-tips/30667).\n\n## Join us on Discord!\n\nJoin the Postman Student Community Discord server for fun events and getting Postman help from other students and Postman team members! [Join here](https://discord.gg/ndTKxHy2CF)"
+		}
+	],
+	"auth": {
+		"type": "oauth2",
+		"oauth2": [
+			{
+				"key": "scope",
+				"value": "",
+				"type": "string"
+			},
+			{
+				"key": "useBrowser",
+				"value": true,
+				"type": "boolean"
+			},
+			{
+				"key": "redirect_uri",
+				"value": "",
+				"type": "string"
+			},
+			{
+				"key": "addTokenTo",
+				"value": "header",
+				"type": "string"
+			},
+			{
+				"key": "client_authentication",
+				"value": "header",
+				"type": "string"
+			},
+			{
+				"key": "authUrl",
+				"value": "https://accounts.spotify.com/authorize",
+				"type": "string"
+			},
+			{
+				"key": "accessTokenUrl",
+				"value": "https://accounts.spotify.com/api/token",
+				"type": "string"
+			},
+			{
+				"key": "grant_type",
+				"value": "authorization_code",
+				"type": "string"
+			},
+			{
+				"key": "tokenName",
+				"value": "SPOTIFY",
+				"type": "string"
+			},
+			{
+				"key": "clientSecret",
+				"value": "{{CLIENT_SECRET}}",
+				"type": "string"
+			},
+			{
+				"key": "clientId",
+				"value": "{{CLIENT_ID}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://api.spotify.com/v1"
+		},
+		{
+			"key": "CLIENT_ID",
+			"value": ""
+		},
+		{
+			"key": "CLIENT_SECRET",
+			"value": ""
+		},
+		{
+			"key": "track",
+			"value": ""
+		},
+		{
+			"key": "artist1",
+			"value": ""
+		},
+		{
+			"key": "trackId",
+			"value": ""
+		},
+		{
+			"key": "collectionId",
+			"value": ""
+		},
+		{
+			"key": "artistId1",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "artist2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "artist3",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "artistId2",
+			"value": ""
+		},
+		{
+			"key": "artistId3",
+			"value": ""
+		}
+	]
+}
