@@ -1,10 +1,12 @@
 // server.js
 // where your node app starts
 
+// we've started you off with Express (https://expressjs.com/) and axios (https://www.npmjs.com/package/axios)
+// but feel free to use whatever libraries or frameworks you'd like through `package.json`.
 const express = require("express");
 const axios = require("axios");
 const { getAccessToken } = require("./spotify/auth");
-const { searchArtist1, searchArtist2 , searchArtist3 , getRecommendations } = require("./spotify/actions");
+const { searchArtists, getRecommendations } = require("./spotify/actions");
 
 const BASE_URL = "https://api.spotify.com/v1"
 
@@ -33,10 +35,10 @@ app.post("/recommendations", async (req, res) => {
     return res.status(400).send({ message: "Bad Request - must send a JSON body with track and artist" })
   }
   
-  const {artist1 , artist2 , artist3 } = req.body
+  const { artist1, artist2, artist3 } = req.body
   
   if(!artist1 || !artist2 || !artist3) {
-    return res.status(400).send({ message: "Bad Request - must pass 3 artists" })
+    return res.status(400).send({ message: "Bad Request - must pass a track and artist" })
   }
   
   // 1. Get access token
@@ -51,62 +53,54 @@ app.post("/recommendations", async (req, res) => {
   // Create an instance of axios to apply access token to all request headers
   const http = axios.create({ headers: { 'Authorization': `Bearer ${accessToken}` }})
   
-  // 2. get artist id from search
-  let artistId1;
+  // 2. get track id from search
+  let artistId1, artistId2, artistId3;
   
+  // artist 1
   try {
-    const result1 = await searchArtist1(http, { artist1 })
-    const { tracks1 } = result1
+    const result = await searchArtists(http, artist1 )
+    const { artists } = result
     
-    if(!tracks1 || !tracks1.items || !tracks1.items.length ) {
-      return res.status(404).send({ message: ` ${artist1} not found.` })
+    if(!artists || !artists.items || !artists.items.length ) {
+      return res.status(404).send({ message: `${artist1} not found.` })
     }
-    
-    // save the first search result's artistId to a variable
-    artistId1 = tracks1.items[0].id
-  } catch(err) {
+    artistId1=artists.items[0].id;
+  }catch(err){
     console.error(err.message)
-    return res.status(500).send({ message: "Error when searching tracks" })
+    return res.status(500).send({ message: "Error wehn searching for artistId1" })
   }
   
-  let artistId2;
-  
-  try {
-    const result2 = await searchArtist2(http, { artist2 })
-    const { tracks2 } = result2
+   // artist 2
+   try {
+    const result = await searchArtists(http, artist2 )
+    const { artists } = result
     
-    if(!tracks2 || !tracks2.items || !tracks2.items.length ) {
-      return res.status(404).send({ message: ` ${artist2} not found.` })
+    if(!artists || !artists.items || !artists.items.length ) {
+      return res.status(404).send({ message: `${artist2} not found.` })
     }
-    
-    // save the first search result's artistId to a variable
-    artistId2 = tracks2.items[0].id
-  } catch(err) {
+    artistId2=artists.items[0].id;
+  }catch(err){
     console.error(err.message)
-    return res.status(500).send({ message: "Error when searching tracks" })
+    return res.status(500).send({ message: "Error when searching for artistId2" })
   }
   
-  let artistId3;
-  
-  try {
-    const result3 = await searchArtist3(http, { artist3 })
-    const { tracks3 } = result3
+   // artist 3
+ try {
+    const result = await searchArtists(http, artist3 )
+    const { artists } = result
     
-    if(!tracks3 || !tracks3.items || !tracks3.items.length ) {
-      return res.status(404).send({ message: ` ${artist3} not found.` })
+    if(!artists || !artists.items || !artists.items.length ) {
+      return res.status(404).send({ message: `${artist3} not found.` })
     }
-    
-    // save the first search result's artistId to a variable
-    artistId3 = tracks3.items[0].id
-  } catch(err) {
+    artistId3=artists.items[0].id;
+  }catch(err){
     console.error(err.message)
-    return res.status(500).send({ message: "Error when searching tracks" })
+    return res.status(500).send({ message: "Error when searching for artistId3" })
   }
-  
   
   // 3. get song recommendations
   try {
-    const result = await getRecommendations(http, { artistId1 , artistId2 , artistId3 })
+    const result = await getRecommendations(http, { artistId1, artistId2, artistId3 })
     const { tracks } = result
 
     // if no songs returned in search, send a 404 response

@@ -28,7 +28,7 @@ const submitForm = async (event) => {
     // send a POST request to the backend /recommendations path to get song recommendations
     let result
     try {
-      result = await axios.post("/recommendations", { artist1 , artist2 , artist3 })
+      result = await axios.post("/recommendations", { artist1, artist2, artist3 })
     }catch (err) {
       let errMsg = "Something went wrong"
       // overwrite generic error message with server error if present
@@ -44,7 +44,7 @@ const submitForm = async (event) => {
     const topFiveRecs = recommendations.slice(0,5)
 
     const template = handlebars.compile(templateRaw)
-    const recommendationsHtml = template({ artist1, artist2 , artist3 , topFiveRecs })
+    const recommendationsHtml = template({ topFiveRecs })
 
     // set the recommendation output's inner html do the resolved temple
     output.innerHTML = recommendationsHtml
@@ -68,10 +68,10 @@ const enableButton = () => {
 }
 
 const templateRaw = `
-<p>If you like {{artist1}} , {{artist2}} & {{artist3}} you'll love:</p>
+<p>If you like these artists, you'll love:</p>
 <ul>
   {{#each topFiveRecs}}
-  <li>{{name}} - <a href="{{external_urls.spotify}}">Play</a></li>
+  <li>{{name}} - <a href="{{external_urls.spotify}}" target="_blank">Play</a></li>
   {{/each}}
 </ul>
 `
